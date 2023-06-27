@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 
+	"wdocker/cgroups/subsystems"
+	"wdocker/container"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
-	"wdocker/container"
 )
 
 var runCommand = cli.Command{
@@ -16,14 +18,24 @@ var runCommand = cli.Command{
 			Name:  "ti",
 			Usage: "enable tty",
 		},
+		cli.StringFlag{
+			Name: "mem",
+			Usage: "memory",
+		},
 	},
 	Action: func(ctx *cli.Context) error {
 		if len(ctx.Args()) < 1 {
 			return fmt.Errorf("missing container command")
 		}
-		cmd := ctx.Args().Get(0)
+
+		var cmds []string
+		cmds = append(cmds, ctx.Args()...)
+
 		tty := ctx.Bool("ti")
-		Run(tty, cmd)
+		res := &subsystems.ResourceConfig{
+			MemoryLimit: ctx.String("mem"),
+		}
+		Run(tty, cmds, res)
 		return nil
 	},
 }
@@ -33,9 +45,7 @@ var initCommand = cli.Command{
 	Usage: "Init container process run user's process in container. Do not call it outside",
 	Action: func(ctx *cli.Context) error {
 		log.Infof("init come on")
-		cmd := ctx.Args().Get(0)
-		log.Infof("command %s", cmd)
-		err := container.RunContainerInitProcess(cmd, nil)
+		err := container.RunContainerInitProcess()
 		return err
 	},
 }
