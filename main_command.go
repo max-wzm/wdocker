@@ -5,8 +5,8 @@ import (
 
 	"wdocker/cgroups/subsystems"
 	"wdocker/container"
+	"wdocker/log"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
@@ -19,7 +19,7 @@ var runCommand = cli.Command{
 			Usage: "enable tty",
 		},
 		cli.StringFlag{
-			Name: "mem",
+			Name:  "mem",
 			Usage: "memory",
 		},
 	},
@@ -44,7 +44,7 @@ var initCommand = cli.Command{
 	Name:  "init",
 	Usage: "Init container process run user's process in container. Do not call it outside",
 	Action: func(ctx *cli.Context) error {
-		log.Infof("init come on")
+		log.Info("init come on")
 		err := container.RunContainerInitProcess()
 		return err
 	},

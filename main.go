@@ -14,7 +14,7 @@ const (
 )
 
 /**
-docker build -t wdocker . 即可, 
+docker build -t wdocker . 即可,
 build完之后执行docker run --rm --privileged -it --mount type=bind,source=/sys/fs/cgroup,target=/sys/fs/cgroup wdocker bash
 */
 
@@ -29,8 +29,9 @@ func main() {
 	}
 
 	app.Before = func(ctx *cli.Context) error {
-		log.SetFormatter(&log.JSONFormatter{})
-
+		log.SetFormatter(&log.TextFormatter{
+			ForceColors: true,
+		})
 		log.SetOutput(os.Stdout)
 		return nil
 	}

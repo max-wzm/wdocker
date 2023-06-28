@@ -2,8 +2,7 @@ package cgroups
 
 import (
 	"wdocker/cgroups/subsystems"
-
-	"github.com/sirupsen/logrus"
+	"wdocker/log"
 )
 
 type CgroupManager struct {
@@ -35,7 +34,7 @@ func (c *CgroupManager) Destroy() error {
 	for _, subSys := range subsystems.Subsystems {
 		err := subSys.Remove(c.Path)
 		if err != nil {
-			logrus.Warnf("remove cgroup fail: %v", err)
+			log.Error("remove cgroup fail: %v", err)
 		}
 	}
 	return nil

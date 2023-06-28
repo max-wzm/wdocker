@@ -4,23 +4,22 @@ import (
 	"os"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
 	"wdocker/cgroups"
 	"wdocker/cgroups/subsystems"
 	"wdocker/container"
+	"wdocker/log"
 )
 
 func Run(tty bool, cmds []string, res *subsystems.ResourceConfig) {
 	parent, wPipe := container.NewParentProcess(tty)
 	if parent == nil {
-		log.Errorf("new parent process error")
+		log.Error("new parent process error")
 		return
 	}
 
 	err := parent.Start()
 	if err != nil {
-		log.Error(err)
+		log.Error("par proc start error: %v", err)
 	}
 
 	cgManger := cgroups.NewCgoupManager("wdocker-cgroup")
@@ -31,12 +30,15 @@ func Run(tty bool, cmds []string, res *subsystems.ResourceConfig) {
 
 	sendInitCommand(cmds, wPipe)
 
-	parent.Wait()
-	log.Infof("run.go - quit")
+	err = parent.Wait()
+	if err != nil {
+		log.Error("parent wait error: %v", err)
+	}
+	log.Info("run.go - quit")
 }
 
-func sendInitCommand(cmds []string, wPipe *os.File){
-	log.Infof("sending init cmd...")
+func sendInitCommand(cmds []string, wPipe *os.File) {
+	log.Info("sending init cmd...")
 	command := strings.Join(cmds, " ")
 	wPipe.WriteString(command)
 	wPipe.Close()

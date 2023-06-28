@@ -5,8 +5,7 @@ import (
 	"os"
 	"path"
 	"strconv"
-
-	"github.com/sirupsen/logrus"
+	"wdocker/log"
 )
 
 type MemorySubsystem struct {
@@ -21,11 +20,13 @@ func (sys *MemorySubsystem) SetResourceConfig(cgPath string, res *ResourceConfig
 		return err
 	}
 
+	if res.MemoryLimit == "" {
+		return nil
+	}
 	err = os.WriteFile(path.Join(subsysCgPath, "memory.limit_in_bytes"), []byte(res.MemoryLimit), 0644)
 	if err != nil {
 		return fmt.Errorf("set cg memory fail: %v", err)
 	}
-
 	return nil
 }
 func (sys *MemorySubsystem) AddProc(cgPath string, pid int) error {
@@ -46,6 +47,6 @@ func (sys *MemorySubsystem) Remove(cgPath string) error {
 	if err != nil {
 		return err
 	}
-	logrus.Infof("susSysCgPath is %s.", subsysCgPath)
+	log.Info("susSysCgPath is %s.", subsysCgPath)
 	return os.Remove(subsysCgPath)
 }

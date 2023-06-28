@@ -6,8 +6,7 @@ import (
 	"os"
 	"path"
 	"strings"
-
-	"github.com/sirupsen/logrus"
+	"wdocker/log"
 )
 
 // find the dir of the root cg, to which a subsystem is attached.
@@ -36,7 +35,7 @@ func FindCgMountPoint(subsystem string) string {
 func GetAbsCgPath(subsystem string, cgPath string, autoCreate bool) (string, error) {
 	cgRoot := FindCgMountPoint(subsystem)
 	absCgPath := path.Join(cgRoot, cgPath)
-	logrus.Infof("cgroot = %s, cgpath = %s, absPath = %s", cgRoot, cgPath, absCgPath)
+	log.Info("cgroot = %s, cgpath = %s, absPath = %s", cgRoot, cgPath, absCgPath)
 
 	_, err := os.Stat(absCgPath)
 	if err == nil {

@@ -4,19 +4,18 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
-
-	"github.com/sirupsen/logrus"
+	"wdocker/log"
 )
 
 func NewParentProcess(tty bool) (*exec.Cmd, *os.File) {
 	rPipe, wPipe, err := NewPipe()
 	if err != nil {
-		logrus.Errorf("new pipe error: %v", err)
+		log.Error("new pipe error: %v", err)
 		return nil, nil
 	}
 	proc, err := os.Readlink("/proc/self/exe")
 	if err != nil {
-		logrus.Errorf("get init proc error: %v", err)
+		log.Error("get init proc error: %v", err)
 		return nil, nil
 	}
 
@@ -25,7 +24,7 @@ func NewParentProcess(tty bool) (*exec.Cmd, *os.File) {
 		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS | syscall.CLONE_NEWNET | syscall.CLONE_NEWIPC,
 	}
 
-	if tty{
+	if tty {
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
