@@ -7,6 +7,7 @@ import (
 	"path"
 	"strings"
 	"wdocker/log"
+	"wdocker/utils"
 )
 
 // find the dir of the root cg, to which a subsystem is attached.
@@ -37,12 +38,16 @@ func GetAbsCgPath(subsystem string, cgPath string, autoCreate bool) (string, err
 	absCgPath := path.Join(cgRoot, cgPath)
 	log.Info("cgroot = %s, cgpath = %s, absPath = %s", cgRoot, cgPath, absCgPath)
 
-	_, err := os.Stat(absCgPath)
-	if err == nil {
+	exists, err := utils.PathExists(absCgPath)
+	if err != nil {
+		return "", fmt.Errorf("cg path error %v", err)
+	}
+
+	if exists {
 		return absCgPath, nil
 	}
 
-	if os.IsNotExist(err) && autoCreate {
+	if autoCreate {
 		err := os.Mkdir(absCgPath, 0755)
 		if err != nil {
 			return "", fmt.Errorf("error create cg %v", err)

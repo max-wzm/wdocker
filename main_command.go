@@ -6,6 +6,7 @@ import (
 	"wdocker/cgroups/subsystems"
 	"wdocker/container"
 	"wdocker/log"
+	"wdocker/utils"
 
 	"github.com/urfave/cli"
 )
@@ -19,24 +20,46 @@ var runCommand = cli.Command{
 			Usage: "enable tty",
 		},
 		cli.StringFlag{
-			Name:  "mem",
+			Name:  "mem, m",
 			Usage: "memory",
+		},
+		cli.StringFlag{
+			Name:  "name",
+			Usage: "container name",
 		},
 	},
 	Action: func(ctx *cli.Context) error {
-		if len(ctx.Args()) < 1 {
-			return fmt.Errorf("missing container command")
+		if len(ctx.Args()) < 2 {
+			return fmt.Errorf("missing image path or container command")
 		}
 
-		var cmds []string
-		cmds = append(cmds, ctx.Args()...)
+		id := utils.RandomID()
+		name := ctx.String("name")
+		if name == "" {
+			name = id
+		}
+		imagePath := ctx.Args().Get(0)
 
-		tty := ctx.Bool("ti")
+		var cmds []string
+		cmds = append(cmds, ctx.Args()[1:]...)
+
 		res := &subsystems.ResourceConfig{
 			MemoryLimit: ctx.String("mem"),
 		}
-		Run(tty, cmds, res)
-		return nil
+		log.Info("res: %v", res)
+
+		container := &container.Container{
+			ID:             id,
+			Name:           name,
+			ImagePath:      imagePath,
+			ResourceConfig: res,
+			InitCmds:       cmds,
+		}
+
+		log.Info("container info: %v", container)
+
+		tty := ctx.Bool("ti")
+		return Run(container, tty)
 	},
 }
 
