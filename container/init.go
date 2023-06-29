@@ -49,7 +49,11 @@ func setUpMount() error {
 	}
 	log.Info("current working dir is %s", dir)
 
-	pivotRoot(dir)
+	err = pivotRoot(dir)
+	if err != nil {
+		log.Error("pivot_root: %v", err)
+		return err
+	}
 	syscall.Mount("proc", "/proc", "proc", uintptr(defaultMountFlags), "")
 	syscall.Mount("tmpfs", "/dev", "tmpfs", syscall.MS_NOSUID|syscall.MS_STRICTATIME, "mode=755")
 	return nil

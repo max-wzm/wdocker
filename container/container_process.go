@@ -7,7 +7,7 @@ import (
 	"wdocker/log"
 )
 
-func NewParentProcess(tty bool) (*exec.Cmd, *os.File) {
+func NewInitCommand(con *Container, tty bool) (*exec.Cmd, *os.File) {
 	rPipe, wPipe, err := NewPipe()
 	if err != nil {
 		log.Error("new pipe error: %v", err)
@@ -31,7 +31,6 @@ func NewParentProcess(tty bool) (*exec.Cmd, *os.File) {
 	}
 
 	cmd.ExtraFiles = []*os.File{rPipe}
-	cmd.Dir = "/root/busybox"
 
 	return cmd, wPipe
 }
