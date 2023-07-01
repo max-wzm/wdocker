@@ -20,7 +20,6 @@ func Run(con *container.Container) error {
 	}
 
 	newWorkSpace(con)
-	defer deleteWorkspace(con)
 	// workspace must be created and mounted before initCmd starts
 	// since inidCmd starts with Mount Namespace, if u create workspace after initCmd, mount in newWorkspace() by parentProc does not work for initProc.
 	// as a result, initProc only sees empty root content.
@@ -33,19 +32,23 @@ func Run(con *container.Container) error {
 	}
 
 	cgManger := cgroups.NewCgoupManager(con.ID)
-	defer cgManger.Destroy()
 	cgManger.SetResourceConfig(con.ResourceConfig)
 	cgManger.AddProc(initCmd.Process.Pid)
 
 	// after sending, init.go starts working.
 	sendInitCommand(con.InitCmds, wPipe)
 
-	err = initCmd.Wait()
+	if !con.RunningConfig.Detach {
+		defer deleteWorkspace(con)
+		defer cgManger.Destroy()
 
-	if err != nil {
-		log.Error("parent wait error: %v", err)
-		return err
+		err = initCmd.Wait()
+		if err != nil {
+			log.Error("parent wait error: %v", err)
+			return err
+		}
 	}
+
 	log.Info("run.go - quit")
 	return nil
 }

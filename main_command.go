@@ -63,6 +63,7 @@ var runCommand = cli.Command{
 		runningConfig := &container.RunningConfig{
 			Tty: ctx.Bool("it"),
 			Remove: ctx.Bool("rm"),
+			Detach: ctx.Bool("d"),
 			Volume: ctx.String("v"),
 		}
 		log.Info("runningConfig: %v", runningConfig)

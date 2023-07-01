@@ -5,6 +5,7 @@ import "wdocker/cgroups/subsystems"
 type RunningConfig struct {
 	Tty bool
 	Remove bool
+	Detach bool
 	Volume string
 }
 
