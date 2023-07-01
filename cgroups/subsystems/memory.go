@@ -16,6 +16,7 @@ func (sys *MemorySubsystem) Name() string {
 }
 func (sys *MemorySubsystem) SetResourceConfig(cgPath string, res *ResourceConfig) error {
 	subsysCgPath, err := GetAbsCgPath(sys.Name(), cgPath, true)
+	log.Info("absPath = %s", subsysCgPath)
 	if err != nil {
 		return err
 	}

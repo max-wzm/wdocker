@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 	"strings"
-	"wdocker/log"
 	"wdocker/utils"
 )
 
@@ -36,7 +35,6 @@ func FindCgMountPoint(subsystem string) string {
 func GetAbsCgPath(subsystem string, cgPath string, autoCreate bool) (string, error) {
 	cgRoot := FindCgMountPoint(subsystem)
 	absCgPath := path.Join(cgRoot, cgPath)
-	log.Info("cgroot = %s, cgpath = %s, absPath = %s", cgRoot, cgPath, absCgPath)
 
 	exists, err := utils.PathExists(absCgPath)
 	if err != nil {

@@ -13,11 +13,6 @@ const (
 	Enjoy it, just for fun.`
 )
 
-/**
-docker build -t wdocker . 即可,
-build完之后执行docker run --rm --privileged -it --mount type=bind,source=/sys/fs/cgroup,target=/sys/fs/cgroup wdocker bash
-*/
-
 func main() {
 	app := cli.NewApp()
 	app.Name = "wdocker"

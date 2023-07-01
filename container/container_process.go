@@ -7,7 +7,7 @@ import (
 	"wdocker/log"
 )
 
-func NewInitCommand(con *Container, tty bool) (*exec.Cmd, *os.File) {
+func NewInitCommand(con *Container) (*exec.Cmd, *os.File) {
 	rPipe, wPipe, err := NewPipe()
 	if err != nil {
 		log.Error("new pipe error: %v", err)
@@ -24,7 +24,7 @@ func NewInitCommand(con *Container, tty bool) (*exec.Cmd, *os.File) {
 		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS | syscall.CLONE_NEWNET | syscall.CLONE_NEWIPC,
 	}
 
-	if tty {
+	if con.RunningConfig.Tty {
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr

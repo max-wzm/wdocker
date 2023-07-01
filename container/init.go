@@ -74,7 +74,8 @@ func readCommands() []string {
 }
 
 func pivotRoot(newRoot string) error {
-	err := syscall.Mount(newRoot, newRoot, "bind", syscall.MS_BIND, "")
+	// !!! MS_REC indicates to inherit the mount pointsl
+	err := syscall.Mount(newRoot, newRoot, "bind", syscall.MS_BIND|syscall.MS_REC, "")
 	if err != nil {
 		return fmt.Errorf("mount bind %s error: %v", newRoot, err)
 	}

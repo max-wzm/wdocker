@@ -3,6 +3,7 @@ package container
 import "wdocker/cgroups/subsystems"
 
 type RunningConfig struct {
+	Tty bool
 	Remove bool
 	Volume string
 }

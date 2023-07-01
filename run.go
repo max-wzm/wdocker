@@ -12,8 +12,8 @@ import (
 	"wdocker/log"
 )
 
-func Run(con *container.Container, tty bool) error {
-	initCmd, wPipe := container.NewInitCommand(con, tty)
+func Run(con *container.Container) error {
+	initCmd, wPipe := container.NewInitCommand(con)
 	if initCmd == nil {
 		log.Error("new parent process error")
 		return fmt.Errorf("new parent process error")
@@ -59,12 +59,35 @@ func sendInitCommand(cmds []string, wPipe *os.File) {
 
 func newWorkSpace(con *container.Container) {
 	containerURL := path.Join("/wdocker", con.ID)
-	os.Mkdir("/wdocker", 0777)
-	os.Mkdir(containerURL, 0777)
+	con.URL = containerURL
+	os.MkdirAll(con.URL, 0777)
 	readURL := newReadLayer(containerURL, con.ImagePath)
 	writeURL := newWriteLayer(containerURL)
 	createMountPoint(containerURL, readURL, writeURL)
-	con.URL = containerURL
+	MountVolume(con)
+}
+
+func MountVolume(con *container.Container) {
+	volume := con.RunningConfig.Volume
+	if volume == "" {
+		return
+	}
+	volumnURLs := strings.Split(volume, ":")
+	if len(volumnURLs) == 2 && volumnURLs[0] != "" && volumnURLs[1] != "" {
+		parentVolURL := volumnURLs[0]
+		os.MkdirAll(parentVolURL, 0777)
+		containerVolURL := path.Join(con.URL, "mnt", volumnURLs[1])
+		os.MkdirAll(containerVolURL, 0777)
+		err := cmdRunStd("mount", "-t", "aufs", "-o", "dirs="+parentVolURL, "none", containerVolURL)
+		if err != nil {
+			log.Error("mount volumn err: %v", err)
+		} else {
+			log.Info("mount volume success: %q", volumnURLs)
+		}
+	} else {
+		log.Error("extra volume mapping error: wrong format")
+	}
+
 }
 
 func newWriteLayer(containerURL string) string {
@@ -86,7 +109,7 @@ func newReadLayer(containerURL, imagePath string) string {
 func createMountPoint(containerURL, readURL, writeURL string) string {
 	mntURL := path.Join(containerURL, "mnt")
 	os.Mkdir(mntURL, 0777)
-	dirOpt := "br:" + writeURL + ":" + readURL + "=ro"
+	dirOpt := "dirs=" + writeURL + ":" + readURL + "=ro"
 	mntCmd := exec.Command("mount", "-t", "aufs", "-o", dirOpt, "none", mntURL)
 	mntCmd.Stdout = os.Stdout
 	mntCmd.Stderr = os.Stderr
@@ -98,12 +121,15 @@ func createMountPoint(containerURL, readURL, writeURL string) string {
 }
 
 func deleteWorkspace(con *container.Container) {
+	if con.RunningConfig.Volume != "" {
+		volumeURLs := strings.Split(con.RunningConfig.Volume, ":")
+		containerVolURL := path.Join(con.URL, "mnt", volumeURLs[1])
+		cmdRunStd("umount", containerVolURL)
+	}
+
 	mntURL := path.Join(con.URL, "mnt")
 	writeLayerURL := path.Join(con.URL, "write_layer")
-	c := exec.Command("umount", mntURL)
-	c.Stderr = os.Stderr
-	c.Stdout = os.Stdout
-	c.Run()
+	cmdRunStd("umount", mntURL)
 	os.RemoveAll(mntURL)
 	os.RemoveAll(writeLayerURL)
 	log.Info("removed worspace: %s & %s", mntURL, writeLayerURL)
@@ -111,4 +137,12 @@ func deleteWorkspace(con *container.Container) {
 	if con.RunningConfig.Remove {
 		os.RemoveAll(con.URL)
 	}
+}
+
+func cmdRunStd(name string, arg ...string) error {
+	c := exec.Command(name, arg...)
+	c.Stderr = os.Stderr
+	c.Stdout = os.Stdout
+	err := c.Run()
+	return err
 }

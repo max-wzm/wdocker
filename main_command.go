@@ -16,8 +16,8 @@ var runCommand = cli.Command{
 	Usage: "create a container with namespace and cgroups limit \n my docker run -ti [command]",
 	Flags: []cli.Flag{
 		cli.BoolFlag{
-			Name:  "ti",
-			Usage: "enable tty",
+			Name:  "it",
+			Usage: "enable interactive terminal",
 		},
 		cli.StringFlag{
 			Name:  "mem, m",
@@ -34,6 +34,10 @@ var runCommand = cli.Command{
 		cli.BoolFlag{
 			Name:  "rm",
 			Usage: "remove after exit",
+		},
+		cli.BoolFlag{
+			Name: "d",
+			Usage: "detach container",
 		},
 	},
 	Action: func(ctx *cli.Context) error {
@@ -57,9 +61,11 @@ var runCommand = cli.Command{
 		log.Info("res: %v", res)
 
 		runningConfig := &container.RunningConfig{
+			Tty: ctx.Bool("it"),
 			Remove: ctx.Bool("rm"),
 			Volume: ctx.String("v"),
 		}
+		log.Info("runningConfig: %v", runningConfig)
 
 		container := &container.Container{
 			ID:             id,
@@ -72,8 +78,7 @@ var runCommand = cli.Command{
 
 		log.Info("container info: %v", container)
 
-		tty := ctx.Bool("ti")
-		return Run(container, tty)
+		return Run(container)
 	},
 }
 
