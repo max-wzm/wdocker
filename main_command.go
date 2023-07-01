@@ -27,6 +27,14 @@ var runCommand = cli.Command{
 			Name:  "name",
 			Usage: "container name",
 		},
+		cli.StringFlag{
+			Name:  "v",
+			Usage: "volume",
+		},
+		cli.BoolFlag{
+			Name:  "rm",
+			Usage: "remove after exit",
+		},
 	},
 	Action: func(ctx *cli.Context) error {
 		if len(ctx.Args()) < 2 {
@@ -48,11 +56,17 @@ var runCommand = cli.Command{
 		}
 		log.Info("res: %v", res)
 
+		runningConfig := &container.RunningConfig{
+			Remove: ctx.Bool("rm"),
+			Volume: ctx.String("v"),
+		}
+
 		container := &container.Container{
 			ID:             id,
 			Name:           name,
 			ImagePath:      imagePath,
 			ResourceConfig: res,
+			RunningConfig:  runningConfig,
 			InitCmds:       cmds,
 		}
 

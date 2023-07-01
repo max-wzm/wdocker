@@ -24,7 +24,7 @@ func Run(con *container.Container, tty bool) error {
 	// workspace must be created and mounted before initCmd starts
 	// since inidCmd starts with Mount Namespace, if u create workspace after initCmd, mount in newWorkspace() by parentProc does not work for initProc.
 	// as a result, initProc only sees empty root content.
-	initCmd.Dir = con.Root
+	initCmd.Dir = path.Join(con.URL, "mnt")
 
 	err := initCmd.Start()
 	if err != nil {
@@ -63,7 +63,7 @@ func newWorkSpace(con *container.Container) {
 	os.Mkdir(containerURL, 0777)
 	readURL := newReadLayer(containerURL, con.ImagePath)
 	writeURL := newWriteLayer(containerURL)
-	con.Root = createMountPoint(containerURL, readURL, writeURL)
+	createMountPoint(containerURL, readURL, writeURL)
 	con.URL = containerURL
 }
 
@@ -98,13 +98,17 @@ func createMountPoint(containerURL, readURL, writeURL string) string {
 }
 
 func deleteWorkspace(con *container.Container) {
-	c := exec.Command("umount", con.Root)
+	mntURL := path.Join(con.URL, "mnt")
+	writeLayerURL := path.Join(con.URL, "write_layer")
+	c := exec.Command("umount", mntURL)
 	c.Stderr = os.Stderr
 	c.Stdout = os.Stdout
 	c.Run()
-	err := os.RemoveAll(con.URL)
-	if err != nil {
-		log.Error("remove workspace err: %v", err)
+	os.RemoveAll(mntURL)
+	os.RemoveAll(writeLayerURL)
+	log.Info("removed worspace: %s & %s", mntURL, writeLayerURL)
+
+	if con.RunningConfig.Remove {
+		os.RemoveAll(con.URL)
 	}
-	log.Info("removed worspace: %s", con.URL)
 }
