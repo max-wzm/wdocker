@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	_ "wdocker/nsenter"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -22,6 +23,7 @@ func main() {
 		initCommand,
 		runCommand,
 		listCommand,
+		execCommand,
 	}
 
 	app.Before = func(ctx *cli.Context) error {

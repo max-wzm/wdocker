@@ -1,12 +1,9 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
-	"path"
 	"strings"
-	"text/tabwriter"
 	"time"
 
 	"wdocker/cgroups/subsystems"
@@ -106,30 +103,27 @@ var listCommand = cli.Command{
 	Name:  "ps",
 	Usage: "list all containers",
 	Action: func(ctx *cli.Context) error {
-		ListContainers()
+		container.ListContainers()
 		return nil
 	},
 }
 
-func ListContainers() {
-	dirEntries, _ := os.ReadDir("/wdocker")
-	containers := make([]*container.Container, 0)
-	for _, e := range dirEntries {
-		fi, _ := e.Info()
-		configURL := path.Join("/wdocker", fi.Name(), container.ConfigName)
-		b, err := os.ReadFile(configURL)
-		if err != nil {
-			continue
+var execCommand = cli.Command{
+	Name:  "exec",
+	Usage: "enter a container and exec command",
+	Action: func(ctx *cli.Context) error {
+		log.Info("got env %s, %s", os.Getenv(container.ENV_EXEC_PID), os.Getenv(container.ENV_EXEC_CMD))
+		if os.Getenv(container.ENV_EXEC_PID) != "" {
+			log.Info("pid callback pid %s", os.Getgid())
+			return nil
 		}
-		var tmpCon container.Container
-		json.Unmarshal(b, &tmpCon)
-		containers = append(containers, &tmpCon)
-	}
-
-	w := tabwriter.NewWriter(os.Stdout, 12, 1, 3, ' ', 0)
-	fmt.Fprint(w, "ID\tNAME\tPID\tSTATUS\tCOMMAND\tCREATED\n")
-	for _, con := range containers {
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t\n", con.ID, con.Name, con.PID, con.Status, con.InitCmd, con.CreatedTime)
-	}
-	w.Flush()
+		if len(ctx.Args()) < 2 {
+			return fmt.Errorf("missing con name or cmd")
+		}
+		containerName := ctx.Args().Get(0)
+		var cmds []string
+		cmds = append(cmds, ctx.Args()[1:]...)
+		container.ExecContainer(containerName, cmds)
+		return nil
+	},
 }
