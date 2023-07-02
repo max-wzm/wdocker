@@ -10,7 +10,6 @@ package nsenter
 #include <string.h>
 #include <fcntl.h>
 void __attribute__((constructor))  enter_namespace(void) {
-	puts("eee");
 	char *wdocker_pid;
 	wdocker_pid = getenv("wdocker_pid");
 	if (wdocker_pid) {

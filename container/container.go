@@ -6,7 +6,6 @@ import (
 
 var (
 	RUNNING    = "running"
-	STOPPED    = "stopped"
 	EXITED     = "exited"
 	ConfigName = "config.json"
 	LogName    = "container.log"

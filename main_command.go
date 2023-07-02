@@ -127,3 +127,25 @@ var execCommand = cli.Command{
 		return nil
 	},
 }
+
+var stopCommand = cli.Command{
+	Name:  "stop",
+	Usage: "stop a container",
+	Action: func(ctx *cli.Context) error {
+		if len(ctx.Args()) < 1 {
+			return fmt.Errorf("require container name!")
+		}
+		return container.StopContainer(ctx.Args().Get(0))
+	},
+}
+
+var removeCommand = cli.Command{
+	Name:  "rm",
+	Usage: "remove an exited container",
+	Action: func(ctx *cli.Context) error {
+		if len(ctx.Args()) < 1 {
+			return fmt.Errorf("require container name!")
+		}
+		return container.RemoveContainer(ctx.Args().Get(0))
+	},
+}

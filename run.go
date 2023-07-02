@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -12,6 +11,7 @@ import (
 	"wdocker/cgroups"
 	"wdocker/container"
 	"wdocker/log"
+	"wdocker/utils"
 )
 
 func Run(con *container.Container) error {
@@ -40,7 +40,7 @@ func Run(con *container.Container) error {
 
 	con.PID = strconv.Itoa(initCmd.Process.Pid)
 	con.Status = container.RUNNING
-	recordContainer(con)
+	container.RecordContainer(con)
 	// after sending, init.go starts working.
 	sendInitCommand(con.InitCmd, wPipe)
 
@@ -49,7 +49,7 @@ func Run(con *container.Container) error {
 		defer cgManger.Destroy()
 		defer func() {
 			con.Status = container.EXITED
-			recordContainer(con)
+			container.RecordContainer(con)
 		}()
 		err = initCmd.Wait()
 		if err != nil {
@@ -60,22 +60,6 @@ func Run(con *container.Container) error {
 
 	log.Info("run.go - quit")
 	return nil
-}
-
-func recordContainer(con *container.Container) {
-	b, err := json.Marshal(con)
-	if err != nil {
-		log.Error("json marshal err: %v", err)
-	}
-	jsonStr := string(b)
-	log.Info(jsonStr)
-	configURL := path.Join(con.URL, container.ConfigName)
-	f, err := os.Create(configURL)
-	if err != nil {
-		log.Error("create file %s err: %v", configURL, err)
-	}
-	defer f.Close()
-	f.WriteString(jsonStr)
 }
 
 func sendInitCommand(cmd string, wPipe *os.File) {
@@ -104,7 +88,7 @@ func MountVolume(con *container.Container) {
 		os.MkdirAll(parentVolURL, 0777)
 		containerVolURL := path.Join(con.URL, "mnt", volumnURLs[1])
 		os.MkdirAll(containerVolURL, 0777)
-		err := cmdRunStd("mount", "-t", "aufs", "-o", "dirs="+parentVolURL, "none", containerVolURL)
+		err := utils.CmdRunStd("mount", "-t", "aufs", "-o", "dirs="+parentVolURL, "none", containerVolURL)
 		if err != nil {
 			log.Error("mount volumn err: %v", err)
 		} else {
@@ -150,12 +134,12 @@ func deleteWorkspace(con *container.Container) {
 	if con.RunningConfig.Volume != "" {
 		volumeURLs := strings.Split(con.RunningConfig.Volume, ":")
 		containerVolURL := path.Join(con.URL, "mnt", volumeURLs[1])
-		cmdRunStd("umount", containerVolURL)
+		utils.CmdRunStd("umount", containerVolURL)
 	}
 
 	mntURL := path.Join(con.URL, "mnt")
 	writeLayerURL := path.Join(con.URL, "write_layer")
-	cmdRunStd("umount", mntURL)
+	utils.CmdRunStd("umount", mntURL)
 	os.RemoveAll(mntURL)
 	os.RemoveAll(writeLayerURL)
 	log.Info("removed worspace: %s & %s", mntURL, writeLayerURL)
@@ -163,12 +147,4 @@ func deleteWorkspace(con *container.Container) {
 	if con.RunningConfig.Remove {
 		os.RemoveAll(con.URL)
 	}
-}
-
-func cmdRunStd(name string, arg ...string) error {
-	c := exec.Command(name, arg...)
-	c.Stderr = os.Stderr
-	c.Stdout = os.Stdout
-	err := c.Run()
-	return err
 }
