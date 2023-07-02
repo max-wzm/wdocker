@@ -3,6 +3,7 @@ package container
 import (
 	"os"
 	"os/exec"
+	"path"
 	"syscall"
 	"wdocker/log"
 )
@@ -28,6 +29,11 @@ func NewInitCommand(con *Container) (*exec.Cmd, *os.File) {
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
+	}else{
+		logURL := path.Join(con.URL, LogName)
+		file, _ := os.Create(logURL)
+		cmd.Stdout = file
+		cmd.Stderr = file
 	}
 
 	cmd.ExtraFiles = []*os.File{rPipe}

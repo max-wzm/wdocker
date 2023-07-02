@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
 	"strings"
 
 	"wdocker/cgroups"
@@ -13,6 +15,7 @@ import (
 )
 
 func Run(con *container.Container) error {
+	con.URL = path.Join("/wdocker", con.ID)
 	initCmd, wPipe := container.NewInitCommand(con)
 	if initCmd == nil {
 		log.Error("new parent process error")
@@ -35,13 +38,19 @@ func Run(con *container.Container) error {
 	cgManger.SetResourceConfig(con.ResourceConfig)
 	cgManger.AddProc(initCmd.Process.Pid)
 
+	con.PID = strconv.Itoa(initCmd.Process.Pid)
+	con.Status = container.RUNNING
+	recordContainer(con)
 	// after sending, init.go starts working.
-	sendInitCommand(con.InitCmds, wPipe)
+	sendInitCommand(con.InitCmd, wPipe)
 
 	if !con.RunningConfig.Detach {
 		defer deleteWorkspace(con)
 		defer cgManger.Destroy()
-
+		defer func() {
+			con.Status = container.EXITED
+			recordContainer(con)
+		}()
 		err = initCmd.Wait()
 		if err != nil {
 			log.Error("parent wait error: %v", err)
@@ -53,16 +62,30 @@ func Run(con *container.Container) error {
 	return nil
 }
 
-func sendInitCommand(cmds []string, wPipe *os.File) {
+func recordContainer(con *container.Container) {
+	b, err := json.Marshal(con)
+	if err != nil {
+		log.Error("json marshal err: %v", err)
+	}
+	jsonStr := string(b)
+	log.Info(jsonStr)
+	configURL := path.Join(con.URL, container.ConfigName)
+	f, err := os.Create(configURL)
+	if err != nil {
+		log.Error("create file %s err: %v", configURL, err)
+	}
+	defer f.Close()
+	f.WriteString(jsonStr)
+}
+
+func sendInitCommand(cmd string, wPipe *os.File) {
 	log.Info("sending init cmd...")
-	command := strings.Join(cmds, " ")
-	wPipe.WriteString(command)
+	wPipe.WriteString(cmd)
 	wPipe.Close()
 }
 
 func newWorkSpace(con *container.Container) {
-	containerURL := path.Join("/wdocker", con.ID)
-	con.URL = containerURL
+	containerURL := con.URL
 	os.MkdirAll(con.URL, 0777)
 	readURL := newReadLayer(containerURL, con.ImagePath)
 	writeURL := newWriteLayer(containerURL)
