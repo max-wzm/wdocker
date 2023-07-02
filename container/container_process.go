@@ -29,7 +29,7 @@ func NewInitCommand(con *Container) (*exec.Cmd, *os.File) {
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
-	}else{
+	} else {
 		logURL := path.Join(con.URL, LogName)
 		file, _ := os.Create(logURL)
 		cmd.Stdout = file
@@ -37,6 +37,7 @@ func NewInitCommand(con *Container) (*exec.Cmd, *os.File) {
 	}
 
 	cmd.ExtraFiles = []*os.File{rPipe}
+	cmd.Env = append(os.Environ(), con.RunningConfig.Env...)
 
 	return cmd, wPipe
 }

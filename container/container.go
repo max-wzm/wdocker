@@ -16,6 +16,7 @@ type RunningConfig struct {
 	Remove bool
 	Detach bool
 	Volume string
+	Env    []string
 }
 
 type ContainerInfo struct {

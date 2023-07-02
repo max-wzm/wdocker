@@ -34,6 +34,10 @@ var runCommand = cli.Command{
 			Name:  "v",
 			Usage: "volume",
 		},
+		cli.StringSliceFlag{
+			Name:  "e",
+			Usage: "set environment",
+		},
 		cli.BoolFlag{
 			Name:  "rm",
 			Usage: "remove after exit",
@@ -68,6 +72,7 @@ var runCommand = cli.Command{
 			Remove: ctx.Bool("rm"),
 			Detach: ctx.Bool("d"),
 			Volume: ctx.String("v"),
+			Env:    ctx.StringSlice("e"),
 		}
 		log.Info("runningConfig: %v", runningConfig)
 
@@ -77,15 +82,15 @@ var runCommand = cli.Command{
 			InitCmd:     strings.Join(cmds, " "),
 			CreatedTime: time.Now().Format("2006-01-02 15:04:05"),
 		}
-		container := &container.Container{
+		con := &container.Container{
 			ContainerInfo:  info,
 			ImagePath:      imagePath,
 			ResourceConfig: res,
 			RunningConfig:  runningConfig,
 		}
 
-		log.Info("container: %v", container)
-		return Run(container)
+		log.Info("container: %v", con)
+		return container.Run(con)
 	},
 }
 

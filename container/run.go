@@ -1,4 +1,4 @@
-package main
+package container
 
 import (
 	"fmt"
@@ -9,14 +9,13 @@ import (
 	"strings"
 
 	"wdocker/cgroups"
-	"wdocker/container"
 	"wdocker/log"
 	"wdocker/utils"
 )
 
-func Run(con *container.Container) error {
+func Run(con *Container) error {
 	con.URL = path.Join("/wdocker", con.ID)
-	initCmd, wPipe := container.NewInitCommand(con)
+	initCmd, wPipe := NewInitCommand(con)
 	if initCmd == nil {
 		log.Error("new parent process error")
 		return fmt.Errorf("new parent process error")
@@ -39,8 +38,8 @@ func Run(con *container.Container) error {
 	cgManger.AddProc(initCmd.Process.Pid)
 
 	con.PID = strconv.Itoa(initCmd.Process.Pid)
-	con.Status = container.RUNNING
-	container.RecordContainer(con)
+	con.Status = RUNNING
+	RecordContainer(con)
 	// after sending, init.go starts working.
 	sendInitCommand(con.InitCmd, wPipe)
 
@@ -48,8 +47,8 @@ func Run(con *container.Container) error {
 		defer deleteWorkspace(con)
 		defer cgManger.Destroy()
 		defer func() {
-			con.Status = container.EXITED
-			container.RecordContainer(con)
+			con.Status = EXITED
+			RecordContainer(con)
 		}()
 		err = initCmd.Wait()
 		if err != nil {
@@ -68,7 +67,7 @@ func sendInitCommand(cmd string, wPipe *os.File) {
 	wPipe.Close()
 }
 
-func newWorkSpace(con *container.Container) {
+func newWorkSpace(con *Container) {
 	containerURL := con.URL
 	os.MkdirAll(con.URL, 0777)
 	readURL := newReadLayer(containerURL, con.ImagePath)
@@ -77,7 +76,7 @@ func newWorkSpace(con *container.Container) {
 	MountVolume(con)
 }
 
-func MountVolume(con *container.Container) {
+func MountVolume(con *Container) {
 	volume := con.RunningConfig.Volume
 	if volume == "" {
 		return
@@ -130,7 +129,7 @@ func createMountPoint(containerURL, readURL, writeURL string) string {
 	return mntURL
 }
 
-func deleteWorkspace(con *container.Container) {
+func deleteWorkspace(con *Container) {
 	if con.RunningConfig.Volume != "" {
 		volumeURLs := strings.Split(con.RunningConfig.Volume, ":")
 		containerVolURL := path.Join(con.URL, "mnt", volumeURLs[1])
