@@ -26,6 +26,8 @@ type ContainerInfo struct {
 	Status      string
 	InitCmd     string
 	CreatedTime string
+	Network     string
+	PortMapping []string
 }
 
 type Container struct {

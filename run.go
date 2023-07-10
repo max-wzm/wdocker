@@ -1,4 +1,4 @@
-package container
+package main
 
 import (
 	"fmt"
@@ -9,13 +9,15 @@ import (
 	"strings"
 
 	"wdocker/cgroups"
+	"wdocker/container"
 	"wdocker/log"
+	"wdocker/network"
 	"wdocker/utils"
 )
 
-func Run(con *Container) error {
+func Run(con *container.Container) error {
 	con.URL = path.Join("/wdocker", con.ID)
-	initCmd, wPipe := NewInitCommand(con)
+	initCmd, wPipe := container.NewInitCommand(con)
 	if initCmd == nil {
 		log.Error("new parent process error")
 		return fmt.Errorf("new parent process error")
@@ -38,17 +40,24 @@ func Run(con *Container) error {
 	cgManger.AddProc(initCmd.Process.Pid)
 
 	con.PID = strconv.Itoa(initCmd.Process.Pid)
-	con.Status = RUNNING
-	RecordContainer(con)
+	con.Status = container.RUNNING
+	container.RecordContainer(con)
 	// after sending, init.go starts working.
+	if con.Network != "" {
+		network.Init()
+		err = network.Connect(con.Network, con)
+		if err != nil {
+			return err
+		}
+	}
 	sendInitCommand(con.InitCmd, wPipe)
 
 	if !con.RunningConfig.Detach {
 		defer deleteWorkspace(con)
 		defer cgManger.Destroy()
 		defer func() {
-			con.Status = EXITED
-			RecordContainer(con)
+			con.Status = container.EXITED
+			container.RecordContainer(con)
 		}()
 		err = initCmd.Wait()
 		if err != nil {
@@ -67,7 +76,7 @@ func sendInitCommand(cmd string, wPipe *os.File) {
 	wPipe.Close()
 }
 
-func newWorkSpace(con *Container) {
+func newWorkSpace(con *container.Container) {
 	containerURL := con.URL
 	os.MkdirAll(con.URL, 0777)
 	readURL := newReadLayer(containerURL, con.ImagePath)
@@ -76,7 +85,7 @@ func newWorkSpace(con *Container) {
 	MountVolume(con)
 }
 
-func MountVolume(con *Container) {
+func MountVolume(con *container.Container) {
 	volume := con.RunningConfig.Volume
 	if volume == "" {
 		return
@@ -129,7 +138,7 @@ func createMountPoint(containerURL, readURL, writeURL string) string {
 	return mntURL
 }
 
-func deleteWorkspace(con *Container) {
+func deleteWorkspace(con *container.Container) {
 	if con.RunningConfig.Volume != "" {
 		volumeURLs := strings.Split(con.RunningConfig.Volume, ":")
 		containerVolURL := path.Join(con.URL, "mnt", volumeURLs[1])

@@ -9,6 +9,7 @@ import (
 	"wdocker/cgroups/subsystems"
 	"wdocker/container"
 	"wdocker/log"
+	"wdocker/network"
 	"wdocker/utils"
 
 	"github.com/urfave/cli"
@@ -34,9 +35,17 @@ var runCommand = cli.Command{
 			Name:  "v",
 			Usage: "volume",
 		},
+		cli.StringFlag{
+			Name:  "net, n",
+			Usage: "connect to network",
+		},
 		cli.StringSliceFlag{
 			Name:  "e",
 			Usage: "set environment",
+		},
+		cli.StringSliceFlag{
+			Name:  "p",
+			Usage: "port mapping",
 		},
 		cli.BoolFlag{
 			Name:  "rm",
@@ -81,6 +90,8 @@ var runCommand = cli.Command{
 			Name:        name,
 			InitCmd:     strings.Join(cmds, " "),
 			CreatedTime: time.Now().Format("2006-01-02 15:04:05"),
+			Network:     ctx.String("net"),
+			PortMapping: ctx.StringSlice("p"),
 		}
 		con := &container.Container{
 			ContainerInfo:  info,
@@ -90,7 +101,7 @@ var runCommand = cli.Command{
 		}
 
 		log.Info("container: %v", con)
-		return container.Run(con)
+		return Run(con)
 	},
 }
 
@@ -152,5 +163,52 @@ var removeCommand = cli.Command{
 			return fmt.Errorf("require container name!")
 		}
 		return container.RemoveContainer(ctx.Args().Get(0))
+	},
+}
+
+var networkCommand = cli.Command{
+	Name:  "network",
+	Usage: "network related",
+	Subcommands: []cli.Command{
+		{
+			Name:  "create",
+			Usage: "create network",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name: "subnet, n",
+				},
+				cli.StringFlag{
+					Name: "driver, d",
+				},
+			},
+			Action: func(ctx *cli.Context) error {
+				network.Init()
+				err := network.CreateNetwork(ctx.String("driver"), ctx.String("subnet"), ctx.Args().Get(0))
+				return err
+			},
+		},
+		{
+			Name:  "ls",
+			Usage: "list networks",
+			Action: func(ctx *cli.Context) error {
+				network.Init()
+				network.ListNetwork()
+				return nil
+			},
+		},
+		{
+			Name:  "rm",
+			Usage: "remove network",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name: "name",
+				},
+			},
+			Action: func(ctx *cli.Context) error {
+				network.Init()
+				err := network.DeleteNetwork(ctx.Args().Get(0))
+				return err
+			},
+		},
 	},
 }
