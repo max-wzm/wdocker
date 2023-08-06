@@ -2,10 +2,10 @@ package main
 
 import (
 	"os"
-	_ "wdocker/nsenter"
+	"time"
+	"wdocker/log"
 
-	log "github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/max-wzm/geerpc"
 )
 
 const (
@@ -15,30 +15,14 @@ const (
 )
 
 func main() {
-	app := cli.NewApp()
-	app.Name = "wdocker"
-	app.Usage = usage
-
-	app.Commands = []cli.Command{
-		initCommand,
-		runCommand,
-		listCommand,
-		execCommand,
-		stopCommand,
-		removeCommand,
-		networkCommand,
-	}
-
-	app.Before = func(ctx *cli.Context) error {
-		log.SetFormatter(&log.TextFormatter{
-			ForceColors: true,
-		})
-		log.SetOutput(os.Stdout)
-		return nil
-	}
-
-	err := app.Run(os.Args)
+	raddr := geerpc.StartRegistry(9999)
+	f, err := os.OpenFile("registry", os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err.Error())
+		return
 	}
+	f.WriteString(raddr)
+	var daemon Daemon
+	geerpc.StartServer(raddr, &daemon)
+	time.Sleep(time.Second * 100)
 }

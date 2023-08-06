@@ -1,6 +1,7 @@
 package container
 
 import (
+	"io"
 	"wdocker/cgroups/subsystems"
 )
 
@@ -36,4 +37,7 @@ type Container struct {
 	URL            string
 	ResourceConfig *subsystems.ResourceConfig
 	RunningConfig  *RunningConfig
+	Stdout         io.Writer
+	Stdin          io.Reader
+	Stderr         io.Writer
 }

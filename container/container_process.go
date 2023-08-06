@@ -26,9 +26,9 @@ func NewInitCommand(con *Container) (*exec.Cmd, *os.File) {
 	}
 
 	if con.RunningConfig.Tty {
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		cmd.Stdin = con.Stdin
+		cmd.Stdout = con.Stdout
+		cmd.Stderr = con.Stderr
 	} else {
 		logURL := path.Join(con.URL, LogName)
 		file, _ := os.Create(logURL)
